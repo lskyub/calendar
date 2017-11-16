@@ -22,6 +22,7 @@ import com.sbproject.calendar.database.Data;
 import com.sbproject.calendar.database.User;
 import com.sbproject.calendar.listener.DataChangeListener;
 import com.sbproject.calendar.model.ChildModel;
+import com.sbproject.calendar.model.GroupModel;
 
 import java.sql.Date;
 import java.util.ArrayList;
@@ -43,7 +44,7 @@ public class MainActivity extends Activity implements View.OnClickListener, Expa
     private android.widget.LinearLayout llLeft;
     private android.widget.TextView tvRigth;
     private android.widget.LinearLayout llRight;
-    private ArrayList<String> mGroupList;
+    private ArrayList<GroupModel> mGroupList;
     private ArrayList<ArrayList<ChildModel>> mChildList;
     private Map<Integer, ArrayList<ChildModel>> mChildListContent;
     private BaseExpandableAdapter mBaseExpandableAdapter;
@@ -53,12 +54,18 @@ public class MainActivity extends Activity implements View.OnClickListener, Expa
     private boolean isDelete = false;
     private Calendar mCalendar;
     private String[] weekArray;
-    private Animation animTransAlphaLeft;
-    private Animation animTransAlphaRight;
+    private Animation animTransInAlphaLeft;
+    private Animation animTransInAlphaRight;
+    private Animation animTransOutAlphaLeft;
+    private Animation animTransOutAlphaRight;
     private AppDatabase database;
     private int userSeq = -1;
     private List<Data> dataList;
     private boolean isUpdate = false;
+    private int mWeekOfYear;
+    private int mYear;
+    private int mMonth;
+    private int mDay;
 
     @Override
     public void onBackPressed() {
@@ -76,33 +83,23 @@ public class MainActivity extends Activity implements View.OnClickListener, Expa
         setLayout();
         init();
 
-        for (int i = 0; i < 7; i++) {
-            mChildListContent.put(i, new ArrayList<ChildModel>());
-            mChildList.add(mChildListContent.get(i));
-            mGroupList.add("");
-        }
-        mBaseExpandableAdapter = new BaseExpandableAdapter(this, mGroupList, mChildList, this);
-
-        elvMain.setAdapter(mBaseExpandableAdapter);
-        //리스트 화살표 아이콘 삭제
-        elvMain.setGroupIndicator(null);
-        // 처음 시작시 그룹 모두 열기 (expandGroup)
-        final int groupCount = mBaseExpandableAdapter.getGroupCount();
-        for (int i = 0; i < groupCount; i++) {
-            elvMain.expandGroup(i);
-        }
-
-        // 그룹 클릭 이벤트
-        elvMain.setOnGroupClickListener(this);
-        // 리스트 롱 클릭 이벤트
-        elvMain.setOnItemLongClickListener(this);
-        // 리스트 터치 이벤트
-        elvMain.setOnTouchListener(this);
-        //버튼 이벤트
-        llLeft.setOnClickListener(this);
-        llRight.setOnClickListener(this);
-
         getUser();
+    }
+
+    @Override
+    protected void onResume() {
+        Calendar calendar = Calendar.getInstance();
+        mWeekOfYear = calendar.get(Calendar.WEEK_OF_YEAR);
+        mYear = calendar.get(Calendar.YEAR);
+        mMonth = calendar.get(Calendar.MONTH);
+        mDay = calendar.get(Calendar.DATE);
+        super.onResume();
+    }
+
+    @Override
+    protected void onPause() {
+        setDataChange(4, getData());
+        super.onPause();
     }
 
     /**
@@ -116,8 +113,92 @@ public class MainActivity extends Activity implements View.OnClickListener, Expa
         mChildList = new ArrayList<>();
         mChildListContent = new HashMap<>();
 
-        animTransAlphaLeft = AnimationUtils.loadAnimation(this, R.anim.anim_translate_alpha_left);
-        animTransAlphaRight = AnimationUtils.loadAnimation(this, R.anim.anim_translate_alpha_right);
+        for (int i = 0; i < 7; i++) {
+            mChildListContent.put(i, new ArrayList<ChildModel>());
+            mChildList.add(mChildListContent.get(i));
+            mGroupList.add(new GroupModel());
+        }
+        mBaseExpandableAdapter = new BaseExpandableAdapter(this, mGroupList, mChildList, this);
+
+        elvMain.setAdapter(mBaseExpandableAdapter);
+        //리스트 화살표 아이콘 삭제
+        elvMain.setGroupIndicator(null);
+        // 처음 시작시 그룹 모두 열기 (expandGroup)
+        final int groupCount = mBaseExpandableAdapter.getGroupCount();
+        for (int i = 0; i < groupCount; i++) {
+            elvMain.expandGroup(i);
+        }
+
+        animTransInAlphaLeft = AnimationUtils.loadAnimation(this, R.anim.anim_slide_in_left);
+        animTransInAlphaLeft.setAnimationListener(new Animation.AnimationListener() {
+            @Override
+            public void onAnimationStart(Animation animation) {
+
+            }
+
+            @Override
+            public void onAnimationEnd(Animation animation) {
+                mCalendar.add(Calendar.DATE, 7);
+                setDataChange(3, getData());
+            }
+
+            @Override
+            public void onAnimationRepeat(Animation animation) {
+
+            }
+        });
+        animTransInAlphaRight = AnimationUtils.loadAnimation(this, R.anim.anim_slide_in_right);
+        animTransInAlphaRight.setAnimationListener(new Animation.AnimationListener() {
+            @Override
+            public void onAnimationStart(Animation animation) {
+
+            }
+
+            @Override
+            public void onAnimationEnd(Animation animation) {
+                mCalendar.add(Calendar.DATE, -7);
+                setDataChange(3, getData());
+            }
+
+            @Override
+            public void onAnimationRepeat(Animation animation) {
+
+            }
+        });
+        animTransOutAlphaLeft = AnimationUtils.loadAnimation(this, R.anim.anim_slide_out_left);
+        animTransOutAlphaLeft.setAnimationListener(new Animation.AnimationListener() {
+            @Override
+            public void onAnimationStart(Animation animation) {
+
+            }
+
+            @Override
+            public void onAnimationEnd(Animation animation) {
+                elvMain.startAnimation(animTransInAlphaRight);
+            }
+
+            @Override
+            public void onAnimationRepeat(Animation animation) {
+
+            }
+        });
+        animTransOutAlphaRight = AnimationUtils.loadAnimation(this, R.anim.anim_slide_out_right);
+        animTransOutAlphaRight.setAnimationListener(new Animation.AnimationListener() {
+            @Override
+            public void onAnimationStart(Animation animation) {
+
+            }
+
+            @Override
+            public void onAnimationEnd(Animation animation) {
+                elvMain.startAnimation(animTransInAlphaLeft);
+            }
+
+            @Override
+            public void onAnimationRepeat(Animation animation) {
+
+            }
+        });
     }
 
     /**
@@ -129,6 +210,16 @@ public class MainActivity extends Activity implements View.OnClickListener, Expa
         tvRigth = (TextView) findViewById(R.id.tv_rigth);
         llLeft = (LinearLayout) findViewById(R.id.ll_left);
         tvLeft = (TextView) findViewById(R.id.tv_left);
+
+        // 그룹 클릭 이벤트
+        elvMain.setOnGroupClickListener(this);
+        // 리스트 롱 클릭 이벤트
+        elvMain.setOnItemLongClickListener(this);
+        // 리스트 터치 이벤트
+        elvMain.setOnTouchListener(this);
+        //버튼 이벤트
+        llLeft.setOnClickListener(this);
+        llRight.setOnClickListener(this);
     }
 
     /**
@@ -216,7 +307,14 @@ public class MainActivity extends Activity implements View.OnClickListener, Expa
         tvRigth.setText(startDay + " - " + endDay + " " + (month + 1) + getString(R.string.month_unit));
 
         for (int i = 0; i < 7; i++) {
-            mGroupList.set(i, weekArray[i] + " - " + getDay(i) + getString(R.string.day_unit));
+            GroupModel groupModel = new GroupModel();
+            if (weekOfYear == mWeekOfYear && year == mYear && month == mMonth && getDay(i) == mDay) {
+                groupModel.setLine(true);
+            } else {
+                groupModel.setLine(false);
+            }
+            groupModel.setDay(weekArray[i] + " - " + getDay(i) + getString(R.string.day_unit));
+            mGroupList.set(i, groupModel);
             if (dataList != null) {
                 for (int j = 0; j < dataList.size(); j++) {
                     if (dataList.get(j).day == getDay(i)) {
@@ -251,14 +349,10 @@ public class MainActivity extends Activity implements View.OnClickListener, Expa
     public void onClick(View v) {
         switch (v.getId()) {
             case R.id.ll_left:
-                elvMain.startAnimation(animTransAlphaLeft);
-                mCalendar.add(Calendar.DATE, -7);
-                setDataChange(3, getData());
+                elvMain.startAnimation(animTransOutAlphaRight);
                 break;
             case R.id.ll_right:
-                elvMain.startAnimation(animTransAlphaRight);
-                mCalendar.add(Calendar.DATE, 7);
-                setDataChange(3, getData());
+                elvMain.startAnimation(animTransOutAlphaLeft);
                 break;
         }
     }
