@@ -375,19 +375,9 @@ public class MainActivity extends Activity implements View.OnClickListener, Expa
                     user.name = "test";
                     //테스트성 데이터
                     database.userDao().insert(user);
-                    e.onNext(user);
-                } else if (userList.size() == 1) {
-                    user = new User();
-                    user.email = "email" + 1 + ".test";
-                    user.password = "password.test";
-                    user.name = "test" + 1;
-                    //테스트성 데이터
-                    database.userDao().insert(user);
-                    e.onNext(user);
-                } else {
-                    user = database.userDao().selectUserEmail("email.test");
-                    e.onNext(user);
                 }
+                user = database.userDao().selectUserEmail("email.test");
+                e.onNext(user);
             }
         }).subscribeOn(Schedulers.newThread()).subscribe(new Observer<User>() {
             private List<Data> tempList;
