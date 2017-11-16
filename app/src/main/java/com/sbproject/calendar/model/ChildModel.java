@@ -9,7 +9,6 @@ import com.sbproject.calendar.database.Data;
 /**
  * Created by Administrator on 2017-11-09.
  */
-
 public class ChildModel {
     private int groupPosition;
     private int childPosition;

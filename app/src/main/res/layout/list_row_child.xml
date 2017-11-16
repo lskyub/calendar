@@ -1,14 +1,14 @@
 <?xml version="1.0" encoding="utf-8"?>
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
-    android:layout_width="match_parent"
-    android:layout_height="30dp"
-    android:orientation="horizontal"
-    android:paddingLeft="10dp">
+              android:layout_width="match_parent"
+              android:layout_height="30dp"
+              android:orientation="horizontal"
+              android:paddingLeft="10dp">
 
     <CheckBox
         android:id="@+id/cb_child"
         android:layout_width="wrap_content"
-        android:layout_height="match_parent" />
+        android:layout_height="match_parent"/>
 
     <EditText
         android:id="@+id/edt_child"
@@ -17,7 +17,7 @@
         android:background="@android:color/transparent"
         android:fontFamily="sans-serif"
         android:gravity="center_vertical"
-        android:textColor="#111111" />
+        android:textColor="#111111"/>
 
     <TextView
         android:id="@+id/tv_child"
@@ -27,5 +27,5 @@
         android:fontFamily="sans-serif"
         android:gravity="center_vertical"
         android:textColor="#949494"
-        android:visibility="gone" />
+        android:visibility="gone"/>
 </LinearLayout>

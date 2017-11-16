@@ -22,7 +22,6 @@ import java.util.ArrayList;
 /**
  * Created by Administrator on 2017-11-09.
  */
-
 public class BaseExpandableAdapter extends BaseExpandableListAdapter {
     private ArrayList<String> groupList = null;
     private ArrayList<ArrayList<ChildModel>> childList = null;
@@ -104,6 +103,15 @@ public class BaseExpandableAdapter extends BaseExpandableListAdapter {
             viewHolder.edt_child = (EditText) v.findViewById(R.id.edt_child);
             viewHolder.cb_child = (CheckBox) v.findViewById(R.id.cb_child);
             viewHolder.edt_child.addTextChangedListener(new CustomTextWatcher(viewHolder.edt_child, listener));
+            viewHolder.edt_child.setOnFocusChangeListener(new View.OnFocusChangeListener() {
+                @Override
+                public void onFocusChange(View v, boolean hasFocus) {
+                    if (hasFocus) {
+                        EditText editText = (EditText) v;
+                        editText.setSelection(editText.getText().length());
+                    }
+                }
+            });
             viewHolder.cb_child.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
                 @Override
                 public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
@@ -141,7 +149,6 @@ public class BaseExpandableAdapter extends BaseExpandableListAdapter {
 
         viewHolder.tv_child.setText(model.getData().message);
         viewHolder.edt_child.setText(model.getData().message);
-        viewHolder.edt_child.setSelection(model.getData().message.length());
         viewHolder.cb_child.setChecked(model.getData().isCheck);
         return v;
     }

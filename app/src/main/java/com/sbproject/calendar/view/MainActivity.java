@@ -5,6 +5,7 @@ import android.arch.persistence.room.Room;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Message;
+import android.support.annotation.NonNull;
 import android.util.Log;
 import android.view.MotionEvent;
 import android.view.View;
@@ -22,6 +23,7 @@ import com.sbproject.calendar.database.User;
 import com.sbproject.calendar.listener.DataChangeListener;
 import com.sbproject.calendar.model.ChildModel;
 
+import java.sql.Date;
 import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.HashMap;
@@ -36,13 +38,11 @@ import io.reactivex.disposables.Disposable;
 import io.reactivex.schedulers.Schedulers;
 
 public class MainActivity extends Activity implements View.OnClickListener, ExpandableListView.OnGroupClickListener, AdapterView.OnItemLongClickListener, View.OnTouchListener, DataChangeListener {
-
     private ExpandableListView elvMain;
     private android.widget.TextView tvLeft;
     private android.widget.LinearLayout llLeft;
     private android.widget.TextView tvRigth;
     private android.widget.LinearLayout llRight;
-
     private ArrayList<String> mGroupList;
     private ArrayList<ArrayList<ChildModel>> mChildList;
     private Map<Integer, ArrayList<ChildModel>> mChildListContent;
@@ -58,6 +58,16 @@ public class MainActivity extends Activity implements View.OnClickListener, Expa
     private AppDatabase database;
     private int userSeq = -1;
     private List<Data> dataList;
+    private boolean isUpdate = false;
+
+    @Override
+    public void onBackPressed() {
+        if (isUpdate) {
+            setDataChange(4, getData());
+        } else {
+            super.onBackPressed();
+        }
+    }
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -92,66 +102,7 @@ public class MainActivity extends Activity implements View.OnClickListener, Expa
         llLeft.setOnClickListener(this);
         llRight.setOnClickListener(this);
 
-        Observable.create(new ObservableOnSubscribe<User>() {
-            @Override
-            public void subscribe(ObservableEmitter<User> e) throws Exception {
-                User user;
-                List<User> userList = database.userDao().selectAllUser();
-                Log.i("sgim", "userList = " + userList.size());
-                if (userList.size() == 0) {
-                    user = new User();
-                    user.email = "email.test";
-                    user.password = "password.test";
-                    user.name = "test";
-                    //테스트성 데이터
-                    database.userDao().insert(user);
-                    e.onNext(user);
-                } else if (userList.size() == 1) {
-                    user = new User();
-                    user.email = "email" + 1 + ".test";
-                    user.password = "password.test";
-                    user.name = "test" + 1;
-                    //테스트성 데이터
-                    database.userDao().insert(user);
-                    e.onNext(user);
-                } else {
-                    user = database.userDao().selectUserEmail("email.test");
-                    e.onNext(user);
-                }
-            }
-        }).subscribeOn(Schedulers.newThread()).subscribe(new Observer<User>() {
-            private List<Data> tempList;
-
-            @Override
-            public void onSubscribe(Disposable d) {
-
-            }
-
-            @Override
-            public void onNext(User user) {
-                userSeq = user.seq;
-                int weekOfYear = mCalendar.get(Calendar.WEEK_OF_YEAR);
-                int year = mCalendar.get(Calendar.YEAR);
-                int month = mCalendar.get(Calendar.MONTH);
-                int day = mCalendar.get(Calendar.DATE);
-                int dayOfWeek = mCalendar.get(Calendar.DAY_OF_WEEK);
-
-                tempList = database.dataDao().selectWeekOfYear(userSeq, year, weekOfYear);
-
-                onComplete();
-            }
-
-            @Override
-            public void onError(Throwable e) {
-
-            }
-
-            @Override
-            public void onComplete() {
-                dataList = tempList;
-                setDateOrDataSetting();
-            }
-        });
+        getUser();
     }
 
     /**
@@ -193,6 +144,9 @@ public class MainActivity extends Activity implements View.OnClickListener, Expa
                     break;
                 case 1:
                     isDelete = false;
+                    break;
+                case 2:
+                    setDateOrDataSetting();
                     break;
             }
         }
@@ -299,14 +253,35 @@ public class MainActivity extends Activity implements View.OnClickListener, Expa
             case R.id.ll_left:
                 elvMain.startAnimation(animTransAlphaLeft);
                 mCalendar.add(Calendar.DATE, -7);
-                setDateOrDataSetting();
+                setDataChange(3, getData());
                 break;
             case R.id.ll_right:
                 elvMain.startAnimation(animTransAlphaRight);
                 mCalendar.add(Calendar.DATE, 7);
-                setDateOrDataSetting();
+                setDataChange(3, getData());
                 break;
         }
+    }
+
+    @NonNull
+    private ChildModel getData() {
+        ChildModel childModel = new ChildModel();
+        Calendar calendar = (Calendar) mCalendar.clone();
+        int weekOfYear = calendar.get(Calendar.WEEK_OF_YEAR);
+        int year = calendar.get(Calendar.YEAR);
+        int month = calendar.get(Calendar.MONTH) + 1;
+        int day = calendar.get(Calendar.DATE);
+        int dayOfWeek = calendar.get(Calendar.DAY_OF_WEEK);
+
+        Data data = new Data();
+        data.userSeq = userSeq;
+        data.weekOfYear = weekOfYear;
+        data.year = year;
+        data.month = month;
+        data.day = day;
+        data.dayOfWeek = dayOfWeek;
+        childModel.setData(data);
+        return childModel;
     }
 
     @Override
@@ -327,13 +302,15 @@ public class MainActivity extends Activity implements View.OnClickListener, Expa
             handler.sendEmptyMessage(0);
             if (ExpandableListView.getPackedPositionType(id) == ExpandableListView.PACKED_POSITION_TYPE_GROUP) {
                 int groupPosition = ExpandableListView.getPackedPositionGroup(id);
-                mChildListContent.get(groupPosition).clear();
-                mBaseExpandableAdapter.notifyDataSetChanged();
+                if (mChildListContent.get(groupPosition).size() != 0) {
+                    setDataChange(2, mChildListContent.get(groupPosition).get(0));
+                }
             } else if (ExpandableListView.getPackedPositionType(id) == ExpandableListView.PACKED_POSITION_TYPE_CHILD) {
                 int groupPosition = ExpandableListView.getPackedPositionGroup(id);
                 int childPosition = ExpandableListView.getPackedPositionChild(id);
-                mChildListContent.get(groupPosition).remove(childPosition);
-                mBaseExpandableAdapter.notifyDataSetChanged();
+                if (mChildListContent.get(groupPosition).size() != 0) {
+                    setDataChange(1, mChildListContent.get(groupPosition).get(childPosition));
+                }
             }
             return true;
         }
@@ -363,38 +340,56 @@ public class MainActivity extends Activity implements View.OnClickListener, Expa
 
             childModel.setData(data);
             setDataChange(0, childModel);
-            mBaseExpandableAdapter.notifyDataSetChanged();
         }
         return true;
     }
 
     @Override
     public void CheckEvent(int groupPosition, int childPosition, boolean isCheck) {
-//        mChildListContent.get(groupPosition).get(childPosition).getData().isCheck = isCheck;
-//        mBaseExpandableAdapter.notifyDataSetChanged();
+        isUpdate = true;
+        ChildModel childModel = mChildListContent.get(groupPosition).get(childPosition);
+        Data data = childModel.getData();
+        data.isCheck = isCheck;
+        mBaseExpandableAdapter.notifyDataSetChanged();
     }
 
     @Override
     public void EditEvent(int groupPosition, int childPosition, String msg) {
-//        mChildListContent.get(groupPosition).get(childPosition).getData().message = msg;
+        isUpdate = true;
+        ChildModel childModel = mChildListContent.get(groupPosition).get(childPosition);
+        Data data = childModel.getData();
+        data.message = msg;
     }
 
-    private void setDataChange(final int type, final ChildModel childModel) {
-        Observable.create(new ObservableOnSubscribe<Data>() {
+    private void getUser() {
+        Observable.create(new ObservableOnSubscribe<User>() {
             @Override
-            public void subscribe(ObservableEmitter<Data> e) throws Exception {
-                Data data = childModel.getData();
-                if (type == 0) {
-                    database.dataDao().insert(data);
-                } else if (type == 1) {
-                    database.dataDao().deleteDay(data.seq, data.year, data.weekOfYear, data.day);
-                } else if (type == 2) {
-                    database.dataDao().deleteDay(data.year, data.weekOfYear, data.day);
+            public void subscribe(ObservableEmitter<User> e) throws Exception {
+                User user;
+                List<User> userList = database.userDao().selectAllUser();
+                Log.i("sgim", "userList = " + userList.size());
+                if (userList.size() == 0) {
+                    user = new User();
+                    user.email = "email.test";
+                    user.password = "password.test";
+                    user.name = "test";
+                    //테스트성 데이터
+                    database.userDao().insert(user);
+                    e.onNext(user);
+                } else if (userList.size() == 1) {
+                    user = new User();
+                    user.email = "email" + 1 + ".test";
+                    user.password = "password.test";
+                    user.name = "test" + 1;
+                    //테스트성 데이터
+                    database.userDao().insert(user);
+                    e.onNext(user);
+                } else {
+                    user = database.userDao().selectUserEmail("email.test");
+                    e.onNext(user);
                 }
-                Log.i("sgim", data.toString());
-                e.onNext(data);
             }
-        }).subscribeOn(Schedulers.newThread()).subscribe(new Observer<Data>() {
+        }).subscribeOn(Schedulers.newThread()).subscribe(new Observer<User>() {
             private List<Data> tempList;
 
             @Override
@@ -403,15 +398,16 @@ public class MainActivity extends Activity implements View.OnClickListener, Expa
             }
 
             @Override
-            public void onNext(Data data) {
-                Log.i("sgim", "userSeq = " + userSeq);
+            public void onNext(User user) {
+                userSeq = user.seq;
                 int weekOfYear = mCalendar.get(Calendar.WEEK_OF_YEAR);
                 int year = mCalendar.get(Calendar.YEAR);
-                int month = mCalendar.get(Calendar.MONTH) + 1;
+                int month = mCalendar.get(Calendar.MONTH);
                 int day = mCalendar.get(Calendar.DATE);
                 int dayOfWeek = mCalendar.get(Calendar.DAY_OF_WEEK);
 
                 tempList = database.dataDao().selectWeekOfYear(userSeq, year, weekOfYear);
+
                 onComplete();
             }
 
@@ -424,7 +420,62 @@ public class MainActivity extends Activity implements View.OnClickListener, Expa
             public void onComplete() {
                 dataList = tempList;
                 setDateOrDataSetting();
-                Log.i("sgim", "dataList size = " + dataList.size());
+            }
+        });
+    }
+
+    private void setDataChange(final int type, final ChildModel childModel) {
+        Observable.create(new ObservableOnSubscribe<Data>() {
+            @Override
+            public void subscribe(ObservableEmitter<Data> e) throws Exception {
+                Data data = childModel.getData();
+                if (isUpdate) {
+                    database.dataDao().update(dataList);
+                    isUpdate = false;
+                }
+                Log.i("sgim", "data = " + data.toString());
+                if (type == 4) {
+                    e.onComplete();
+                } else {
+                    if (type == 0) {
+                        database.dataDao().insert(data);
+                    } else if (type == 1) {
+                        database.dataDao().deleteDay(data.seq, data.year, data.weekOfYear, data.day);
+                    } else if (type == 2) {
+                        database.dataDao().deleteDay(data.year, data.weekOfYear, data.day);
+                    }
+                    e.onNext(data);
+                }
+            }
+        }).subscribeOn(Schedulers.newThread()).subscribe(new Observer<Data>() {
+            private List<Data> tempList;
+
+            @Override
+            public void onSubscribe(Disposable d) {
+
+            }
+
+            @Override
+            public void onNext(Data data) {
+                Log.i("sgim", "userSeq = " + userSeq);
+                tempList = database.dataDao().selectWeekOfYear(userSeq, data.year, data.weekOfYear);
+                onComplete();
+            }
+
+            @Override
+            public void onError(Throwable e) {
+
+            }
+
+            @Override
+            public void onComplete() {
+                if (type == 4) {
+                    finish();
+                } else {
+                    dataList = tempList;
+                    Log.i("sgim", "dataList size = " + dataList.size());
+                    handler.sendEmptyMessage(2);
+                }
             }
         });
     }
