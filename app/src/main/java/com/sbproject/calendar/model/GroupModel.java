@@ -1,11 +1,5 @@
 package com.sbproject.calendar.model;
 
-import android.widget.CheckBox;
-import android.widget.EditText;
-import android.widget.TextView;
-
-import com.sbproject.calendar.database.Data;
-
 /**
  * Created by Administrator on 2017-11-09.
  */

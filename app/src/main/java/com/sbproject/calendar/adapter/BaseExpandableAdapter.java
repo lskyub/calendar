@@ -1,8 +1,10 @@
-package com.sbproject.calendar.view;
+package com.sbproject.calendar.adapter;
 
 import android.content.Context;
 import android.graphics.Paint;
-import android.util.Log;
+import android.text.SpannableString;
+import android.text.Spanned;
+import android.text.style.UnderlineSpan;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -16,6 +18,7 @@ import com.sbproject.calendar.R;
 import com.sbproject.calendar.custom.CustomTextWatcher;
 import com.sbproject.calendar.listener.DataChangeListener;
 import com.sbproject.calendar.model.ChildModel;
+import com.sbproject.calendar.model.GroupModel;
 
 import java.util.ArrayList;
 
@@ -23,15 +26,13 @@ import java.util.ArrayList;
  * Created by Administrator on 2017-11-09.
  */
 public class BaseExpandableAdapter extends BaseExpandableListAdapter {
-    private ArrayList<String> groupList = null;
+    private ArrayList<GroupModel> groupList = null;
     private ArrayList<ArrayList<ChildModel>> childList = null;
     private LayoutInflater inflater = null;
     private ViewHolder viewHolder = null;
     private DataChangeListener listener;
-    private Context mContext;
 
-    public BaseExpandableAdapter(Context c, ArrayList<String> groupList, ArrayList<ArrayList<ChildModel>> childList, DataChangeListener listener) {
-        this.mContext = c;
+    public BaseExpandableAdapter(Context c, ArrayList<GroupModel> groupList, ArrayList<ArrayList<ChildModel>> childList, DataChangeListener listener) {
         this.inflater = LayoutInflater.from(c);
         this.groupList = groupList;
         this.childList = childList;
@@ -40,7 +41,7 @@ public class BaseExpandableAdapter extends BaseExpandableListAdapter {
 
     // 그룹 포지션을 반환한다.
     @Override
-    public String getGroup(int groupPosition) {
+    public GroupModel getGroup(int groupPosition) {
         return groupList.get(groupPosition);
     }
 
@@ -68,7 +69,15 @@ public class BaseExpandableAdapter extends BaseExpandableListAdapter {
         } else {
             viewHolder = (ViewHolder) v.getTag();
         }
-        viewHolder.tv_group.setText(getGroup(groupPosition));
+        GroupModel groupModel = getGroup(groupPosition);
+        String day = groupModel.getDay();
+        if (groupModel.isLine()) {
+            SpannableString string = new SpannableString(day);
+            string.setSpan(new UnderlineSpan(), 0, string.length(), Spanned.SPAN_EXCLUSIVE_INCLUSIVE);
+            viewHolder.tv_group.setText(string);
+        } else {
+            viewHolder.tv_group.setText(day);
+        }
         return v;
     }
 
@@ -149,6 +158,7 @@ public class BaseExpandableAdapter extends BaseExpandableListAdapter {
 
         viewHolder.tv_child.setText(model.getData().message);
         viewHolder.edt_child.setText(model.getData().message);
+        viewHolder.edt_child.setSelection(model.getData().message.length());
         viewHolder.cb_child.setChecked(model.getData().isCheck);
         return v;
     }

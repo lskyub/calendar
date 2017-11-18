@@ -2,29 +2,32 @@ package com.sbproject.calendar.view;
 
 import android.app.Activity;
 import android.arch.persistence.room.Room;
+import android.content.Context;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Message;
 import android.support.annotation.NonNull;
-import android.util.Log;
 import android.view.MotionEvent;
 import android.view.View;
-import android.view.animation.Animation;
-import android.view.animation.AnimationUtils;
+import android.view.inputmethod.InputMethodManager;
 import android.widget.AdapterView;
+import android.widget.Button;
 import android.widget.ExpandableListView;
 import android.widget.LinearLayout;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import com.sbproject.calendar.R;
+import com.sbproject.calendar.adapter.BaseExpandableAdapter;
 import com.sbproject.calendar.database.AppDatabase;
 import com.sbproject.calendar.database.Data;
 import com.sbproject.calendar.database.User;
+import com.sbproject.calendar.listener.AnimationListener;
 import com.sbproject.calendar.listener.DataChangeListener;
 import com.sbproject.calendar.model.ChildModel;
 import com.sbproject.calendar.model.GroupModel;
+import com.sbproject.calendar.utils.AnimationInOut;
 
-import java.sql.Date;
 import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.HashMap;
@@ -40,10 +43,15 @@ import io.reactivex.schedulers.Schedulers;
 
 public class MainActivity extends Activity implements View.OnClickListener, ExpandableListView.OnGroupClickListener, AdapterView.OnItemLongClickListener, View.OnTouchListener, DataChangeListener {
     private ExpandableListView elvMain;
-    private android.widget.TextView tvLeft;
-    private android.widget.LinearLayout llLeft;
-    private android.widget.TextView tvRigth;
-    private android.widget.LinearLayout llRight;
+    private TextView tvLeft;
+    private LinearLayout llLeft;
+    private TextView tvRigth;
+    private LinearLayout llRight;
+    private LinearLayout root;
+    private LinearLayout llProgressbar;
+    private LinearLayout llSetting;
+    private LinearLayout llLanguage;
+    private Button btnSetting;
     private ArrayList<GroupModel> mGroupList;
     private ArrayList<ArrayList<ChildModel>> mChildList;
     private Map<Integer, ArrayList<ChildModel>> mChildListContent;
@@ -54,10 +62,7 @@ public class MainActivity extends Activity implements View.OnClickListener, Expa
     private boolean isDelete = false;
     private Calendar mCalendar;
     private String[] weekArray;
-    private Animation animTransInAlphaLeft;
-    private Animation animTransInAlphaRight;
-    private Animation animTransOutAlphaLeft;
-    private Animation animTransOutAlphaRight;
+    private AnimationInOut animation;
     private AppDatabase database;
     private int userSeq = -1;
     private List<Data> dataList;
@@ -71,6 +76,8 @@ public class MainActivity extends Activity implements View.OnClickListener, Expa
     public void onBackPressed() {
         if (isUpdate) {
             setDataChange(4, getData());
+        } else if (llSetting.getVisibility() == View.VISIBLE) {
+            animation.startAnimation(llSetting, AnimationInOut.BOTTOM_OUT);
         } else {
             super.onBackPressed();
         }
@@ -129,74 +136,51 @@ public class MainActivity extends Activity implements View.OnClickListener, Expa
             elvMain.expandGroup(i);
         }
 
-        animTransInAlphaLeft = AnimationUtils.loadAnimation(this, R.anim.anim_slide_in_left);
-        animTransInAlphaLeft.setAnimationListener(new Animation.AnimationListener() {
+        animation = new AnimationInOut(this, new AnimationListener() {
             @Override
-            public void onAnimationStart(Animation animation) {
-
+            public void onStart(int directionIn) {
+                if (directionIn == AnimationInOut.BOTTOM_OUT) {
+                    btnSetting.setEnabled(false);
+                } else if (directionIn == AnimationInOut.BOTTOM_IN) {
+                    btnSetting.setEnabled(false);
+                    setContentEnabled(false);
+                } else {
+                    llProgressbar.setVisibility(View.GONE);
+                }
             }
 
             @Override
-            public void onAnimationEnd(Animation animation) {
-                mCalendar.add(Calendar.DATE, 7);
-                setDataChange(3, getData());
+            public void onEnd(int directionIn) {
+                if (directionIn == AnimationInOut.BOTTOM_OUT) {
+                    btnSetting.setEnabled(true);
+                    llSetting.setVisibility(View.GONE);
+                    setContentEnabled(true);
+                } else if (directionIn == AnimationInOut.BOTTOM_IN) {
+                    btnSetting.setEnabled(true);
+                } else {
+                    llProgressbar.setVisibility(View.GONE);
+                }
             }
 
             @Override
-            public void onAnimationRepeat(Animation animation) {
-
-            }
-        });
-        animTransInAlphaRight = AnimationUtils.loadAnimation(this, R.anim.anim_slide_in_right);
-        animTransInAlphaRight.setAnimationListener(new Animation.AnimationListener() {
-            @Override
-            public void onAnimationStart(Animation animation) {
-
-            }
-
-            @Override
-            public void onAnimationEnd(Animation animation) {
-                mCalendar.add(Calendar.DATE, -7);
-                setDataChange(3, getData());
+            public void onEvent(int directionIn) {
+                if (directionIn == AnimationInOut.LEFT_IN) {
+                    mCalendar.add(Calendar.DATE, -7);
+                    setDataChange(3, getData());
+                } else if (directionIn == AnimationInOut.RIGHT_IN) {
+                    mCalendar.add(Calendar.DATE, 7);
+                    setDataChange(3, getData());
+                } else if (directionIn == AnimationInOut.BOTTOM_OUT) {
+                    btnSetting.setBackground(getResources().getDrawable(R.drawable.setting_p));
+                } else if (directionIn == AnimationInOut.BOTTOM_IN) {
+                    btnSetting.setBackground(getResources().getDrawable(R.drawable.setting_w));
+                }
             }
 
-            @Override
-            public void onAnimationRepeat(Animation animation) {
-
-            }
-        });
-        animTransOutAlphaLeft = AnimationUtils.loadAnimation(this, R.anim.anim_slide_out_left);
-        animTransOutAlphaLeft.setAnimationListener(new Animation.AnimationListener() {
-            @Override
-            public void onAnimationStart(Animation animation) {
-
-            }
-
-            @Override
-            public void onAnimationEnd(Animation animation) {
-                elvMain.startAnimation(animTransInAlphaRight);
-            }
-
-            @Override
-            public void onAnimationRepeat(Animation animation) {
-
-            }
-        });
-        animTransOutAlphaRight = AnimationUtils.loadAnimation(this, R.anim.anim_slide_out_right);
-        animTransOutAlphaRight.setAnimationListener(new Animation.AnimationListener() {
-            @Override
-            public void onAnimationStart(Animation animation) {
-
-            }
-
-            @Override
-            public void onAnimationEnd(Animation animation) {
-                elvMain.startAnimation(animTransInAlphaLeft);
-            }
-
-            @Override
-            public void onAnimationRepeat(Animation animation) {
-
+            private void setContentEnabled(boolean enabled) {
+                elvMain.setEnabled(enabled);
+                llLeft.setEnabled(enabled);
+                llRight.setEnabled(enabled);
             }
         });
     }
@@ -205,11 +189,16 @@ public class MainActivity extends Activity implements View.OnClickListener, Expa
      * 레이아웃 초기화
      */
     private void setLayout() {
+        root = (LinearLayout) findViewById(R.id.root);
+        llProgressbar = (LinearLayout) findViewById(R.id.ll_progressbar);
         elvMain = (ExpandableListView) findViewById(R.id.elv_main);
         llRight = (LinearLayout) findViewById(R.id.ll_right);
         tvRigth = (TextView) findViewById(R.id.tv_rigth);
         llLeft = (LinearLayout) findViewById(R.id.ll_left);
         tvLeft = (TextView) findViewById(R.id.tv_left);
+        llSetting = (LinearLayout) findViewById(R.id.ll_setting);
+        btnSetting = (Button) findViewById(R.id.btn_setting);
+        llLanguage = (LinearLayout) findViewById(R.id.ll_language);
 
         // 그룹 클릭 이벤트
         elvMain.setOnGroupClickListener(this);
@@ -220,6 +209,8 @@ public class MainActivity extends Activity implements View.OnClickListener, Expa
         //버튼 이벤트
         llLeft.setOnClickListener(this);
         llRight.setOnClickListener(this);
+        btnSetting.setOnClickListener(this);
+        llLanguage.setOnClickListener(this);
     }
 
     /**
@@ -347,12 +338,24 @@ public class MainActivity extends Activity implements View.OnClickListener, Expa
 
     @Override
     public void onClick(View v) {
+        InputMethodManager imm = (InputMethodManager) getSystemService(Context.INPUT_METHOD_SERVICE);
+        imm.hideSoftInputFromWindow(root.getWindowToken(), 0);
         switch (v.getId()) {
             case R.id.ll_left:
-                elvMain.startAnimation(animTransOutAlphaRight);
+                animation.startAnimation(elvMain, AnimationInOut.LEFT_IN);
                 break;
             case R.id.ll_right:
-                elvMain.startAnimation(animTransOutAlphaLeft);
+                animation.startAnimation(elvMain, AnimationInOut.RIGHT_IN);
+                break;
+            case R.id.btn_setting:
+                if (llSetting.getVisibility() == View.VISIBLE) {
+                    animation.startAnimation(llSetting, AnimationInOut.BOTTOM_OUT);
+                } else if (llSetting.getVisibility() == View.GONE) {
+                    animation.startAnimation(llSetting, AnimationInOut.BOTTOM_IN);
+                }
+                break;
+            case R.id.ll_language:
+                Toast.makeText(MainActivity.this, "아직 지원하지 않는 기능 입니다.", Toast.LENGTH_SHORT).show();
                 break;
         }
     }
@@ -461,7 +464,6 @@ public class MainActivity extends Activity implements View.OnClickListener, Expa
             public void subscribe(ObservableEmitter<User> e) throws Exception {
                 User user;
                 List<User> userList = database.userDao().selectAllUser();
-                Log.i("sgim", "userList = " + userList.size());
                 if (userList.size() == 0) {
                     user = new User();
                     user.email = "email.test";
@@ -517,7 +519,6 @@ public class MainActivity extends Activity implements View.OnClickListener, Expa
                     database.dataDao().update(dataList);
                     isUpdate = false;
                 }
-                Log.i("sgim", "data = " + data.toString());
                 if (type == 4) {
                     e.onComplete();
                 } else {
@@ -541,7 +542,6 @@ public class MainActivity extends Activity implements View.OnClickListener, Expa
 
             @Override
             public void onNext(Data data) {
-                Log.i("sgim", "userSeq = " + userSeq);
                 tempList = database.dataDao().selectWeekOfYear(userSeq, data.year, data.weekOfYear);
                 onComplete();
             }
@@ -557,7 +557,6 @@ public class MainActivity extends Activity implements View.OnClickListener, Expa
                     finish();
                 } else {
                     dataList = tempList;
-                    Log.i("sgim", "dataList size = " + dataList.size());
                     handler.sendEmptyMessage(2);
                 }
             }
