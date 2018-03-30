@@ -1,10 +1,10 @@
-package com.sbproject.calendar.model;
+package com.sbproject.miribyul.model;
 
 import android.widget.CheckBox;
 import android.widget.EditText;
 import android.widget.TextView;
 
-import com.sbproject.calendar.database.Data;
+import com.sbproject.miribyul.database.Data;
 
 /**
  * Created by Administrator on 2017-11-09.

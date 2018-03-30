@@ -1,6 +1,8 @@
 <resources>
-    <string name="app_name">Test Calendar</string>
+    <string name="app_name">미리별</string>
 
     <string name="day_unit">일</string>
     <string name="month_unit">월</string>
+    <string name="app_id">ca-app-pub-3566318613494066~2389442621</string>
+    <string name="ad_unit_id">ca-app-pub-3566318613494066/2920813714</string>
 </resources>

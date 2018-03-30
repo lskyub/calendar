@@ -1,4 +1,4 @@
-package com.sbproject.calendar.view;
+package com.sbproject.miribyul.view;
 
 import android.app.Activity;
 import android.arch.persistence.room.Room;
@@ -17,16 +17,19 @@ import android.widget.LinearLayout;
 import android.widget.TextView;
 import android.widget.Toast;
 
-import com.sbproject.calendar.R;
-import com.sbproject.calendar.adapter.BaseExpandableAdapter;
-import com.sbproject.calendar.database.AppDatabase;
-import com.sbproject.calendar.database.Data;
-import com.sbproject.calendar.database.User;
-import com.sbproject.calendar.listener.AnimationListener;
-import com.sbproject.calendar.listener.DataChangeListener;
-import com.sbproject.calendar.model.ChildModel;
-import com.sbproject.calendar.model.GroupModel;
-import com.sbproject.calendar.utils.AnimationInOut;
+import com.google.android.gms.ads.AdRequest;
+import com.google.android.gms.ads.AdView;
+import com.google.android.gms.ads.MobileAds;
+import com.sbproject.miribyul.R;
+import com.sbproject.miribyul.adapter.BaseExpandableAdapter;
+import com.sbproject.miribyul.database.AppDatabase;
+import com.sbproject.miribyul.database.Data;
+import com.sbproject.miribyul.database.User;
+import com.sbproject.miribyul.listener.AnimationListener;
+import com.sbproject.miribyul.listener.DataChangeListener;
+import com.sbproject.miribyul.model.ChildModel;
+import com.sbproject.miribyul.model.GroupModel;
+import com.sbproject.miribyul.utils.AnimationInOut;
 
 import java.util.ArrayList;
 import java.util.Calendar;
@@ -71,6 +74,7 @@ public class MainActivity extends Activity implements View.OnClickListener, Expa
     private int mYear;
     private int mMonth;
     private int mDay;
+    private AdView adView;
 
     @Override
     public void onBackPressed() {
@@ -109,6 +113,12 @@ public class MainActivity extends Activity implements View.OnClickListener, Expa
         super.onPause();
     }
 
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
+        adView.destroy();
+    }
+
     /**
      * 데이터 초기화
      */
@@ -119,6 +129,8 @@ public class MainActivity extends Activity implements View.OnClickListener, Expa
         mGroupList = new ArrayList<>();
         mChildList = new ArrayList<>();
         mChildListContent = new HashMap<>();
+        adView.loadAd(new AdRequest.Builder().build());
+        MobileAds.initialize(this, getResources().getString(R.string.app_id));
 
         for (int i = 0; i < 7; i++) {
             mChildListContent.put(i, new ArrayList<ChildModel>());
@@ -199,6 +211,7 @@ public class MainActivity extends Activity implements View.OnClickListener, Expa
         llSetting = (LinearLayout) findViewById(R.id.ll_setting);
         btnSetting = (Button) findViewById(R.id.btn_setting);
         llLanguage = (LinearLayout) findViewById(R.id.ll_language);
+        adView = (AdView) findViewById(R.id.ad_view);
 
         // 그룹 클릭 이벤트
         elvMain.setOnGroupClickListener(this);
@@ -466,13 +479,13 @@ public class MainActivity extends Activity implements View.OnClickListener, Expa
                 List<User> userList = database.userDao().selectAllUser();
                 if (userList.size() == 0) {
                     user = new User();
-                    user.email = "email.test";
-                    user.password = "password.test";
-                    user.name = "test";
+                    user.email = "default";
+                    user.password = "default";
+                    user.name = "default";
                     //테스트성 데이터
                     database.userDao().insert(user);
                 }
-                user = database.userDao().selectUserEmail("email.test");
+                user = database.userDao().selectUserEmail("default");
                 e.onNext(user);
             }
         }).subscribeOn(Schedulers.newThread()).subscribe(new Observer<User>() {

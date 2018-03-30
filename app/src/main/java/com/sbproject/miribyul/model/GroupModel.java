@@ -1,4 +1,4 @@
-package com.sbproject.calendar.model;
+package com.sbproject.miribyul.model;
 
 /**
  * Created by Administrator on 2017-11-09.

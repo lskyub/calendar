@@ -1,4 +1,4 @@
-package com.sbproject.calendar.adapter;
+package com.sbproject.miribyul.adapter;
 
 import android.content.Context;
 import android.graphics.Paint;
@@ -14,11 +14,11 @@ import android.widget.CompoundButton;
 import android.widget.EditText;
 import android.widget.TextView;
 
-import com.sbproject.calendar.R;
-import com.sbproject.calendar.custom.CustomTextWatcher;
-import com.sbproject.calendar.listener.DataChangeListener;
-import com.sbproject.calendar.model.ChildModel;
-import com.sbproject.calendar.model.GroupModel;
+import com.sbproject.miribyul.R;
+import com.sbproject.miribyul.custom.CustomTextWatcher;
+import com.sbproject.miribyul.listener.DataChangeListener;
+import com.sbproject.miribyul.model.ChildModel;
+import com.sbproject.miribyul.model.GroupModel;
 
 import java.util.ArrayList;
 

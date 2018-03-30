@@ -1,4 +1,4 @@
-package com.sbproject.calendar.database;
+package com.sbproject.miribyul.database;
 
 import android.arch.persistence.room.Database;
 import android.arch.persistence.room.RoomDatabase;

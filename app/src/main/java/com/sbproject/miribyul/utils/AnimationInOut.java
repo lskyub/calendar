@@ -3,7 +3,7 @@
  * Copyright (c)2006-2017, openit Inc.
  * All rights reserved.
  */
-package com.sbproject.calendar.utils;
+package com.sbproject.miribyul.utils;
 
 import android.content.Context;
 import android.os.Handler;
@@ -12,8 +12,8 @@ import android.view.View;
 import android.view.animation.Animation;
 import android.view.animation.AnimationUtils;
 
-import com.sbproject.calendar.R;
-import com.sbproject.calendar.listener.AnimationListener;
+import com.sbproject.miribyul.R;
+import com.sbproject.miribyul.listener.AnimationListener;
 
 public class AnimationInOut {
     public static final int LEFT_IN = 7001;
